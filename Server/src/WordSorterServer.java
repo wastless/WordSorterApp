@@ -4,11 +4,12 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class WordSorterServer {
-    private static final int PORT = 5000;
+    private static final int PORT = Integer.parseInt(System.getenv().getOrDefault("PORT", "5000"));
+    private static final String HOST = System.getenv().getOrDefault("HOST", "localhost");
 
     public static void main(String[] args) {
-        try (ServerSocket serverSocket = new ServerSocket(PORT)) {
-            System.out.println("Server started on port " + PORT);
+        try (ServerSocket serverSocket = new ServerSocket(PORT, 50, InetAddress.getByName(HOST))) {
+            System.out.println("Server started on " + HOST + ":" + PORT);
             
             while (true) {
                 try (Socket clientSocket = serverSocket.accept();

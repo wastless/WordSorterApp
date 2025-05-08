@@ -5,7 +5,8 @@ import java.io.*;
 import java.net.*;
 
 public class WordSorterClient extends JFrame {
-    private static final String SERVER_HOST = "localhost";
+    // private static final String SERVER_HOST = "localhost";
+    private static final String SERVER_HOST = "wordsorterapp.onrender.com";
     private static final int SERVER_PORT = 5000;
     
     private JTextArea inputArea;
