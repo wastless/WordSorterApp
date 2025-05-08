@@ -3,11 +3,10 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.*;
 import java.net.*;
+import java.net.http.*;
 
 public class WordSorterClient extends JFrame {
-    // private static final String SERVER_HOST = "localhost";
-    private static final String SERVER_HOST = "wordsorterapp.onrender.com";
-    private static final int SERVER_PORT = 5000;
+    private static final String SERVER_URL = "https://wordsorterapp.onrender.com";
     
     private JTextArea inputArea;
     private JTextArea outputArea;
@@ -53,24 +52,25 @@ public class WordSorterClient extends JFrame {
             return;
         }
         
-        try (Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
-             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+        try {
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(SERVER_URL))
+                .header("Content-Type", "text/plain")
+                .POST(HttpRequest.BodyPublishers.ofString(text))
+                .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
             
-            // Send text to server
-            out.println(text);
-            
-            // Read response
-            StringBuilder response = new StringBuilder();
-            String line;
-            while ((line = in.readLine()) != null) {
-                response.append(line).append("\n");
+            if (response.statusCode() == 200) {
+                outputArea.setText(response.body());
+            } else {
+                JOptionPane.showMessageDialog(this, 
+                    "Ошибка сервера: " + response.statusCode(),
+                    "Ошибка",
+                    JOptionPane.ERROR_MESSAGE);
             }
-            
-            // Display result
-            outputArea.setText(response.toString());
-            
-        } catch (IOException ex) {
+        } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, 
                 "Ошибка при подключении к серверу: " + ex.getMessage(),
                 "Ошибка",
