@@ -5,12 +5,12 @@ import java.io.*;
 import java.net.*;
 
 public class WordSorterClient extends JFrame {
-    private static final String SERVER_HOST = "localhost";
-    private static final int SERVER_PORT = 5000;
+    private static final String SERVER_HOST = "wordsorterapp.onrender.com";
     
     private JTextArea inputArea;
     private JTextArea outputArea;
     private JButton sortButton;
+    private JLabel statusLabel;
     
     public WordSorterClient() {
         setTitle("Сортировщик слов");
@@ -22,6 +22,7 @@ public class WordSorterClient extends JFrame {
         inputArea = new JTextArea(5, 40);
         outputArea = new JTextArea(10, 40);
         sortButton = new JButton("Сортировать слова");
+        statusLabel = new JLabel("Статус: Готов к работе");
         
         // Set up layout
         setLayout(new BorderLayout());
@@ -34,8 +35,9 @@ public class WordSorterClient extends JFrame {
         outputPanel.add(new JLabel("Отсортированные уникальные слова:"), BorderLayout.NORTH);
         outputPanel.add(new JScrollPane(outputArea), BorderLayout.CENTER);
         
-        JPanel buttonPanel = new JPanel();
-        buttonPanel.add(sortButton);
+        JPanel buttonPanel = new JPanel(new BorderLayout());
+        buttonPanel.add(sortButton, BorderLayout.CENTER);
+        buttonPanel.add(statusLabel, BorderLayout.SOUTH);
         
         add(inputPanel, BorderLayout.NORTH);
         add(outputPanel, BorderLayout.CENTER);
@@ -52,28 +54,44 @@ public class WordSorterClient extends JFrame {
             return;
         }
         
-        try (Socket socket = new Socket(SERVER_HOST, SERVER_PORT);
-             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+        sortButton.setEnabled(false);
+        statusLabel.setText("Статус: Подключение к серверу...");
+        
+        try {
+            // Create URL connection
+            URL url = new URL("https://" + SERVER_HOST);
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+            connection.setDoOutput(true);
+            connection.setConnectTimeout(5000);
+            connection.setReadTimeout(5000);
             
-            // Send text to server
-            out.println(text);
-            
-            // Read response
-            StringBuilder response = new StringBuilder();
-            String line;
-            while ((line = in.readLine()) != null) {
-                response.append(line).append("\n");
+            // Send request
+            try (OutputStream os = connection.getOutputStream()) {
+                byte[] input = text.getBytes("utf-8");
+                os.write(input, 0, input.length);
             }
             
-            // Display result
-            outputArea.setText(response.toString());
+            // Read response
+            try (BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream(), "utf-8"))) {
+                StringBuilder response = new StringBuilder();
+                String responseLine;
+                while ((responseLine = br.readLine()) != null) {
+                    response.append(responseLine.trim()).append("\n");
+                }
+                outputArea.setText(response.toString());
+                statusLabel.setText("Статус: Успешно");
+            }
             
-        } catch (IOException ex) {
+        } catch (Exception ex) {
+            String errorMessage = "Ошибка при подключении к серверу: " + ex.getMessage();
             JOptionPane.showMessageDialog(this, 
-                "Ошибка при подключении к серверу: " + ex.getMessage(),
+                errorMessage,
                 "Ошибка",
                 JOptionPane.ERROR_MESSAGE);
+            statusLabel.setText("Статус: Ошибка подключения");
+        } finally {
+            sortButton.setEnabled(true);
         }
     }
     
