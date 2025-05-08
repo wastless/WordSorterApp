@@ -2,57 +2,38 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.stream.Collectors;
-import com.sun.net.httpserver.*;
 
 public class WordSorterServer {
-    private static final int PORT = Integer.parseInt(System.getenv().getOrDefault("PORT", "10000"));
-    private static final String HOST = System.getenv().getOrDefault("HOST", "0.0.0.0");
+    private static final int DEFAULT_PORT = 5000;
 
     public static void main(String[] args) {
-        try {
-            HttpServer server = HttpServer.create(new InetSocketAddress(HOST, PORT), 0);
-            server.createContext("/", new WordSorterHandler());
-            server.setExecutor(null);
-            server.start();
-            System.out.println("Server started on " + HOST + ":" + PORT);
+        // Get port from environment variable or use default
+        int port = Integer.parseInt(System.getenv().getOrDefault("PORT", String.valueOf(DEFAULT_PORT)));
+        
+        try (ServerSocket serverSocket = new ServerSocket(port)) {
+            System.out.println("Server started on port " + port);
+            
+            while (true) {
+                try (Socket clientSocket = serverSocket.accept();
+                     BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                     PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)) {
+                    
+                    System.out.println("Client connected: " + clientSocket.getInetAddress());
+                    
+                    // Read the text block from client
+                    String textBlock = in.readLine();
+                    if (textBlock != null) {
+                        // Process the text and get sorted unique words
+                        String sortedWords = processText(textBlock);
+                        // Send the result back to client
+                        out.println(sortedWords);
+                    }
+                } catch (IOException e) {
+                    System.err.println("Error handling client: " + e.getMessage());
+                }
+            }
         } catch (IOException e) {
             System.err.println("Server error: " + e.getMessage());
-        }
-    }
-
-    static class WordSorterHandler implements HttpHandler {
-        @Override
-        public void handle(HttpExchange exchange) throws IOException {
-            // Add CORS headers
-            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
-            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
-
-            if ("OPTIONS".equals(exchange.getRequestMethod())) {
-                exchange.sendResponseHeaders(200, -1);
-                return;
-            }
-
-            if ("POST".equals(exchange.getRequestMethod())) {
-                // Read request body
-                String text = new String(exchange.getRequestBody().readAllBytes());
-                
-                // Process the text
-                String sortedWords = processText(text);
-                
-                // Send response
-                exchange.getResponseHeaders().add("Content-Type", "text/plain");
-                exchange.sendResponseHeaders(200, sortedWords.length());
-                try (OutputStream os = exchange.getResponseBody()) {
-                    os.write(sortedWords.getBytes());
-                }
-            } else {
-                String response = "Please use POST method with text in body";
-                exchange.sendResponseHeaders(405, response.length());
-                try (OutputStream os = exchange.getResponseBody()) {
-                    os.write(response.getBytes());
-                }
-            }
         }
     }
 
