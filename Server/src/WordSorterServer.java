@@ -5,7 +5,7 @@ import java.util.stream.Collectors;
 import com.sun.net.httpserver.*;
 
 public class WordSorterServer {
-    private static final int PORT = Integer.parseInt(System.getenv().getOrDefault("PORT", "5000"));
+    private static final int PORT = Integer.parseInt(System.getenv().getOrDefault("PORT", "10000"));
     private static final String HOST = System.getenv().getOrDefault("HOST", "0.0.0.0");
 
     public static void main(String[] args) {
@@ -23,6 +23,16 @@ public class WordSorterServer {
     static class WordSorterHandler implements HttpHandler {
         @Override
         public void handle(HttpExchange exchange) throws IOException {
+            // Add CORS headers
+            exchange.getResponseHeaders().add("Access-Control-Allow-Origin", "*");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Methods", "POST, OPTIONS");
+            exchange.getResponseHeaders().add("Access-Control-Allow-Headers", "Content-Type");
+
+            if ("OPTIONS".equals(exchange.getRequestMethod())) {
+                exchange.sendResponseHeaders(200, -1);
+                return;
+            }
+
             if ("POST".equals(exchange.getRequestMethod())) {
                 // Read request body
                 String text = new String(exchange.getRequestBody().readAllBytes());
@@ -31,6 +41,7 @@ public class WordSorterServer {
                 String sortedWords = processText(text);
                 
                 // Send response
+                exchange.getResponseHeaders().add("Content-Type", "text/plain");
                 exchange.sendResponseHeaders(200, sortedWords.length());
                 try (OutputStream os = exchange.getResponseBody()) {
                     os.write(sortedWords.getBytes());

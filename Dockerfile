@@ -6,7 +6,7 @@ COPY Server/src/WordSorterServer.java .
 
 RUN javac WordSorterServer.java
 
-ENV PORT=443
+ENV PORT=10000
 ENV HOST=0.0.0.0
 
 EXPOSE ${PORT}
