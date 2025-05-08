@@ -36,7 +36,9 @@ public class WordSorterClient extends JFrame {
         outputPanel.add(new JScrollPane(outputArea), BorderLayout.CENTER);
         
         JPanel buttonPanel = new JPanel(new BorderLayout());
-        buttonPanel.add(sortButton, BorderLayout.CENTER);
+        JPanel buttonContainer = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        buttonContainer.add(sortButton);
+        buttonPanel.add(buttonContainer, BorderLayout.CENTER);
         buttonPanel.add(statusLabel, BorderLayout.SOUTH);
         
         add(inputPanel, BorderLayout.NORTH);
