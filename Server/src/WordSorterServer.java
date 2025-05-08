@@ -4,10 +4,9 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class WordSorterServer {
-    private static final int DEFAULT_PORT = 5000;
+    private static final int DEFAULT_PORT = 10000; // Render.com default port
 
     public static void main(String[] args) {
-        // Get port from environment variable or use default
         int port = Integer.parseInt(System.getenv().getOrDefault("PORT", String.valueOf(DEFAULT_PORT)));
         
         try (ServerSocket serverSocket = new ServerSocket(port)) {
@@ -20,12 +19,31 @@ public class WordSorterServer {
                     
                     System.out.println("Client connected: " + clientSocket.getInetAddress());
                     
-                    // Read the text block from client
-                    String textBlock = in.readLine();
-                    if (textBlock != null) {
+                    // Read HTTP request
+                    String requestLine = in.readLine();
+                    if (requestLine != null && requestLine.startsWith("POST")) {
+                        // Skip headers
+                        String line;
+                        int contentLength = 0;
+                        while ((line = in.readLine()) != null && !line.isEmpty()) {
+                            if (line.toLowerCase().startsWith("content-length:")) {
+                                contentLength = Integer.parseInt(line.substring(16).trim());
+                            }
+                        }
+                        
+                        // Read request body
+                        char[] body = new char[contentLength];
+                        in.read(body, 0, contentLength);
+                        String textBlock = new String(body);
+                        
                         // Process the text and get sorted unique words
                         String sortedWords = processText(textBlock);
-                        // Send the result back to client
+                        
+                        // Send HTTP response
+                        out.println("HTTP/1.1 200 OK");
+                        out.println("Content-Type: text/plain; charset=utf-8");
+                        out.println("Content-Length: " + sortedWords.getBytes("UTF-8").length);
+                        out.println();
                         out.println(sortedWords);
                     }
                 } catch (IOException e) {
