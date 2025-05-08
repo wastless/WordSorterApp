@@ -5,7 +5,7 @@ import java.util.stream.Collectors;
 
 public class WordSorterServer {
     private static final int PORT = Integer.parseInt(System.getenv().getOrDefault("PORT", "5000"));
-    private static final String HOST = System.getenv().getOrDefault("HOST", "localhost");
+    private static final String HOST = System.getenv().getOrDefault("HOST", "0.0.0.0");
 
     public static void main(String[] args) {
         try (ServerSocket serverSocket = new ServerSocket(PORT, 50, InetAddress.getByName(HOST))) {
